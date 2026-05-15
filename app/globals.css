@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0705;
+  --color-smoke: #1a1612;
+  --color-parchment: #e8d9b0;
+  --color-parchment-dim: #b8a982;
+  --color-gold: #c9a961;
+  --color-gold-bright: #e6c875;
+  --color-blood: #6b1f1f;
+  --color-blood-bright: #8b2a2a;
+
+  --font-display: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  --font-body: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: var(--color-ink);
+  color: var(--color-parchment);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(201, 169, 97, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(107, 31, 31, 0.06) 0%, transparent 50%),
+    var(--color-ink);
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+
+/* Parchment grain overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  z-index: 1;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, rgba(232, 217, 176, 0.3) 1px, transparent 2px, transparent 4px),
+    repeating-linear-gradient(90deg, transparent 0, rgba(232, 217, 176, 0.2) 1px, transparent 2px, transparent 4px);
+}
+
+main { position: relative; z-index: 2; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--color-gold-bright);
+}
+
+.font-mono { font-family: var(--font-mono); }
+
+/* Slow rotation for the ouroboros image */
+@keyframes ouroboros-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ouroboros-spin {
+  animation: ouroboros-rotate 120s linear infinite;
+}
+
+/* Gold glow pulse */
+@keyframes gold-pulse {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(201, 169, 97, 0.2)); }
+  50% { filter: drop-shadow(0 0 40px rgba(201, 169, 97, 0.4)); }
+}
+
+.gold-glow {
+  animation: gold-pulse 6s ease-in-out infinite;
+}
+
+/* Decorative divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--color-gold);
+  opacity: 0.7;
+}
+
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--color-gold), transparent);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-blood);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
