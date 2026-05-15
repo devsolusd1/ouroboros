@@ -6,7 +6,30 @@ const CONTRACT = "6WR7Nm2Sa7boAyqERbTT6Cyk6UbVLJNTXrTetZDouro";
 const TOTAL_SUPPLY = 1_000_000_000;
 const RATE = 8_432_109; // $OURO per 1 SOL (cosmetic only)
 
+const CYCLE_MS = 60 * 60 * 1000; // 1 hour
+const VOTE_COOLDOWN_MS = 60 * 1000; // 60s per CA per browser
+
 type SwapPhase = "idle" | "connecting" | "ready" | "swapping" | "consumed";
+
+type Vote = { ca: string; ticker?: string; count: number };
+type PastWinner = { cycle: number; ca: string; ticker: string; votes: number; burnedAgo: string };
+
+const INITIAL_VOTES: Vote[] = [
+  { ca: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", ticker: "$BONK", count: 247 },
+  { ca: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", ticker: "$WIF", count: 198 },
+  { ca: "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr", ticker: "$POPCAT", count: 142 },
+  { ca: "MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5", ticker: "$MEW", count: 89 },
+  { ca: "9BB6NFEcjBpetkH3aRDFNXKpyKChyB1eEjnTpnQrqzTV", ticker: "$FARTCOIN", count: 56 },
+  { ca: "2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump", ticker: "$PNUT", count: 22 },
+];
+
+const INITIAL_PAST: PastWinner[] = [
+  { cycle: 47, ca: "5z3EqYQo9HiCEs3R84RCDMu2n7anpDMxRhdK8PSWmrRC", ticker: "$MICHI", votes: 412, burnedAgo: "1h ago" },
+  { cycle: 46, ca: "HhJpBhRRn4g56VsyLuT8DL5Bv31HkXqsrahTTUCZeZg4", ticker: "$BOME", votes: 318, burnedAgo: "2h ago" },
+  { cycle: 45, ca: "ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY", ticker: "$MOTHER", votes: 271, burnedAgo: "3h ago" },
+  { cycle: 44, ca: "Gnaa3iQYrSAGZxgZc8ZkM2HSt8sBYZHFqHCQbUTpump", ticker: "$GOAT", votes: 503, burnedAgo: "4h ago" },
+  { cycle: 43, ca: "5mbK36SZ7J19An8jFochhQS4of8g6BwUjbeUdU3pump", ticker: "$RETARDIO", votes: 187, burnedAgo: "5h ago" },
+];
 
 export default function Page() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -62,7 +85,7 @@ export default function Page() {
 
       <Concept />
 
-      <Feeding />
+      <Hunt />
 
       <Tokenomics />
 
@@ -102,7 +125,7 @@ function Nav({ onAcquire }: { onAcquire: () => void }) {
         </a>
         <div className="hidden md:flex items-center gap-8 text-sm font-mono uppercase tracking-widest text-parchment-dim">
           <a href="#concept" className="hover:text-gold-bright transition">Concept</a>
-          <a href="#feeding" className="hover:text-gold-bright transition">Feeding</a>
+          <a href="#hunt" className="hover:text-gold-bright transition">Hunt</a>
           <a href="#tokenomics" className="hover:text-gold-bright transition">Tokenomics</a>
           <a href="#roadmap" className="hover:text-gold-bright transition">Roadmap</a>
         </div>
@@ -211,62 +234,210 @@ function Concept() {
   );
 }
 
-function Feeding() {
-  const meals = [
-    { ticker: "$BONK", amount: "1,247,891,231", when: "2h ago" },
-    { ticker: "$WIF", amount: "18,432", when: "5h ago" },
-    { ticker: "$POPCAT", amount: "84,123", when: "11h ago" },
-    { ticker: "$MEW", amount: "2,847,123", when: "1d ago" },
-    { ticker: "$FARTCOIN", amount: "412,847", when: "1d ago" },
-    { ticker: "$PNUT", amount: "91,234", when: "2d ago" },
-  ];
+function Hunt() {
+  const [cycleEnd, setCycleEnd] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(0);
+  const [votes, setVotes] = useState<Vote[]>(INITIAL_VOTES);
+  const [pastWinners, setPastWinners] = useState<PastWinner[]>(INITIAL_PAST);
+  const [voteInput, setVoteInput] = useState("");
+  const [feedback, setFeedback] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
+
+  // Init cycle end + tick (client only, avoids SSR mismatch)
+  useEffect(() => {
+    setCycleEnd(Date.now() + 47 * 60 * 1000 + 23 * 1000); // ~47:23 cosmetic
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Cycle rollover — pick winner, archive, reset
+  useEffect(() => {
+    if (!cycleEnd || now === 0) return;
+    if (now < cycleEnd) return;
+    const sorted = [...votes].sort((a, b) => b.count - a.count);
+    const winner = sorted[0];
+    if (winner) {
+      const nextCycle = (pastWinners[0]?.cycle ?? 47) + 1;
+      setPastWinners((p) => [
+        {
+          cycle: nextCycle,
+          ca: winner.ca,
+          ticker: winner.ticker ?? "$" + winner.ca.slice(0, 4).toUpperCase(),
+          votes: winner.count,
+          burnedAgo: "just now",
+        },
+        ...p,
+      ].slice(0, 8));
+    }
+    setVotes(INITIAL_VOTES);
+    setCycleEnd(Date.now() + CYCLE_MS);
+  }, [now, cycleEnd, votes, pastWinners]);
+
+  const timeLeft = cycleEnd ? Math.max(0, cycleEnd - now) : 0;
+  const progress = cycleEnd ? 1 - timeLeft / CYCLE_MS : 0;
+  const sorted = [...votes].sort((a, b) => b.count - a.count);
+  const max = sorted[0]?.count || 1;
+  const totalVotes = votes.reduce((s, v) => s + v.count, 0);
+
+  function showFeedback(kind: "ok" | "err", msg: string) {
+    setFeedback({ kind, msg });
+    setTimeout(() => setFeedback(null), 2500);
+  }
+
+  function castVote(e: React.FormEvent) {
+    e.preventDefault();
+    const ca = voteInput.trim();
+    if (!isValidSolAddress(ca)) {
+      showFeedback("err", "Not a valid Solana / pump.fun contract address.");
+      return;
+    }
+    try {
+      const k = `ouro:vote:${ca}`;
+      const last = parseInt(localStorage.getItem(k) ?? "0", 10);
+      if (Date.now() - last < VOTE_COOLDOWN_MS) {
+        const wait = Math.ceil((VOTE_COOLDOWN_MS - (Date.now() - last)) / 1000);
+        showFeedback("err", `Cooldown. ${wait}s remaining on this CA.`);
+        return;
+      }
+      localStorage.setItem(k, String(Date.now()));
+    } catch { /* localStorage unavailable */ }
+    setVotes((v) => {
+      const existing = v.find((x) => x.ca === ca);
+      if (existing) return v.map((x) => (x.ca === ca ? { ...x, count: x.count + 1 } : x));
+      return [...v, { ca, count: 1 }];
+    });
+    setVoteInput("");
+    showFeedback("ok", "Vote cast. The serpent watches.");
+  }
 
   return (
-    <section id="feeding" className="py-24 px-6 border-t border-gold/10">
+    <section id="hunt" className="py-24 px-6 border-t border-gold/10 bg-smoke/20">
       <div className="max-w-5xl mx-auto">
         <div className="divider mb-12 font-mono text-xs uppercase tracking-[0.4em]">
-          The Feeding
+          The Hunt
         </div>
 
         <blockquote className="font-display italic text-2xl md:text-3xl text-gold-bright leading-snug mb-10 max-w-3xl">
-          “The serpent does not feed alone. It hunts its kin. Every tax becomes another
-          memecoin — bought from the market, dragged into the ring, and burned. The ouroboros
-          consumes the herd.”
+          “Vote the meat. At the hour&apos;s turn, the serpent&apos;s mouth opens and the most-named
+          contract is bought from the market — and burned. The cycle restarts. The ring grows.”
         </blockquote>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <Box label="Memecoins consumed" value="47" suffix="and counting" />
-          <Box label="Burned (USD eq.)" value="$12,847" suffix="returned to ash" />
-          <Box label="Last meal" value="$BONK" suffix="2h ago · 1.2B tokens" />
-        </div>
-
-        <div className="border border-gold/15">
-          <div className="px-5 py-3 border-b border-gold/15 flex items-center justify-between bg-ink/40">
+        {/* Cycle bar */}
+        <div className="border border-gold/20 p-5 mb-6 bg-ink/40">
+          <div className="flex items-baseline justify-between mb-3">
             <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
-              Recent meals
+              Current cycle ends in
             </span>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-blood-bright">
-              ◉ live (simulated)
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blood-bright animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-blood-bright">
+                live · simulated
+              </span>
             </span>
           </div>
-          <div>
-            {meals.map((m, i) => (
+          <div className="font-display text-4xl md:text-5xl text-gold-bright tracking-widest mb-3">
+            {formatCountdown(timeLeft)}
+          </div>
+          <div className="h-1 bg-gold/10 overflow-hidden">
+            <div
+              className="h-full bg-gold transition-[width] duration-500"
+              style={{ width: `${Math.min(100, progress * 100)}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+            <span>{totalVotes} votes this cycle</span>
+            <span>{votes.length} contracts named</span>
+          </div>
+        </div>
+
+        {/* Vote form */}
+        <form onSubmit={castVote} className="mb-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={voteInput}
+              onChange={(e) => setVoteInput(e.target.value)}
+              placeholder="pump.fun contract address"
+              className="flex-1 bg-ink border border-gold/20 px-4 py-3 font-mono text-sm text-parchment placeholder:text-parchment-dim/40 outline-none focus:border-gold"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+            />
+            <button
+              type="submit"
+              className="font-display tracking-widest uppercase text-sm px-6 py-3 bg-gold text-ink hover:bg-gold-bright transition"
+            >
+              Cast Vote
+            </button>
+          </div>
+        </form>
+        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-parchment-dim/70 mb-6 min-h-[1rem]">
+          <span>One vote per CA per IP every 60s · cycle auto-restarts</span>
+          {feedback && (
+            <span className={feedback.kind === "ok" ? "text-gold" : "text-blood-bright"}>
+              {feedback.msg}
+            </span>
+          )}
+        </div>
+
+        {/* Live leaderboard */}
+        <div className="mb-12">
+          <div className="flex items-baseline justify-between mb-3">
+            <span className="font-display text-xl text-gold-bright tracking-wider uppercase">
+              Live Leaderboard
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+              Top contract gets devoured
+            </span>
+          </div>
+
+          {sorted.length === 0 ? (
+            <div className="border border-gold/15 px-5 py-10 text-center font-display italic text-parchment-dim">
+              No votes yet this cycle. The serpent waits.
+            </div>
+          ) : (
+            <ol className="space-y-1">
+              {sorted.map((v, i) => (
+                <LeaderRow key={v.ca} rank={i + 1} vote={v} max={max} />
+              ))}
+            </ol>
+          )}
+        </div>
+
+        {/* Past winners */}
+        <div>
+          <div className="flex items-baseline justify-between mb-3">
+            <span className="font-display text-xl text-gold-bright tracking-wider uppercase">
+              Past Meals
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+              Burned to ash · forever
+            </span>
+          </div>
+
+          <div className="border border-gold/15">
+            {pastWinners.map((p, i) => (
               <div
-                key={m.ticker + i}
-                className="px-5 py-3 grid grid-cols-[1fr_auto_auto] gap-4 items-baseline border-b border-gold/5 last:border-b-0 hover:bg-gold/5 transition"
+                key={p.cycle + p.ca}
+                className="px-4 py-3 grid grid-cols-[60px_auto_1fr_auto] gap-3 items-baseline border-b border-gold/5 last:border-b-0 hover:bg-gold/5 transition"
               >
-                <span className="font-display text-gold-bright tracking-wider">{m.ticker}</span>
-                <span className="font-mono text-sm text-parchment">{m.amount}</span>
-                <span className="font-mono text-xs text-parchment-dim uppercase tracking-widest">
-                  {m.when}
+                <span className="font-mono text-xs uppercase tracking-widest text-parchment-dim">
+                  #{p.cycle}
+                </span>
+                <span className="font-display text-gold-bright tracking-wider">{p.ticker}</span>
+                <span className="font-mono text-[11px] text-parchment-dim truncate">
+                  {truncate(p.ca)}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim text-right">
+                  {p.votes} votes · {p.burnedAgo}
                 </span>
               </div>
             ))}
-          </div>
-          <div className="px-5 py-3 border-t border-gold/15 bg-ink/40 text-center">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
-              All burned to 1nc1nerator11111111111111111111111111111111 · forever
-            </span>
+            <div className="px-4 py-3 border-t border-gold/15 bg-ink/40 text-center">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+                Sent to 1nc1nerator11111111111111111111111111111111
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -274,17 +445,66 @@ function Feeding() {
   );
 }
 
-function Box({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+function LeaderRow({ rank, vote, max }: { rank: number; vote: Vote; max: number }) {
+  const pct = (vote.count / max) * 100;
+  const isTop = rank === 1;
   return (
-    <div className="border border-gold/20 p-5 bg-ink/30">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim mb-2">
-        {label}
+    <li
+      className={`relative border ${isTop ? "border-gold/50 bg-gold/5" : "border-gold/10"} px-4 py-3`}
+    >
+      <div
+        className={`absolute inset-y-0 left-0 ${isTop ? "bg-gold/15" : "bg-gold/5"}`}
+        style={{ width: `${pct}%` }}
+      />
+      <div className="relative grid grid-cols-[40px_auto_1fr_auto] gap-3 items-baseline">
+        <span
+          className={`font-display ${isTop ? "text-3xl text-gold-bright" : "text-xl text-parchment-dim"} tracking-widest`}
+        >
+          {rank}
+        </span>
+        <span className={`font-display tracking-wider ${isTop ? "text-gold-bright text-lg" : "text-parchment"}`}>
+          {vote.ticker ?? "—"}
+        </span>
+        <span className="font-mono text-[11px] text-parchment-dim truncate">
+          {truncate(vote.ca)}
+        </span>
+        <span className="text-right">
+          <span className={`font-display ${isTop ? "text-2xl text-gold-bright" : "text-lg text-parchment"}`}>
+            {vote.count}
+          </span>
+          <span className="ml-1 font-mono text-[10px] text-parchment-dim uppercase tracking-widest">
+            votes
+          </span>
+        </span>
       </div>
-      <div className="font-display text-3xl text-gold-bright mb-1">{value}</div>
-      {suffix && <div className="font-mono text-[10px] text-parchment-dim uppercase tracking-widest">{suffix}</div>}
-    </div>
+      {isTop && (
+        <div className="relative mt-2 font-mono text-[10px] uppercase tracking-widest text-blood-bright flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-blood-bright animate-pulse" />
+          Currently being devoured
+        </div>
+      )}
+    </li>
   );
 }
+
+function formatCountdown(ms: number) {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function truncate(ca: string) {
+  if (ca.length <= 14) return ca;
+  return `${ca.slice(0, 6)}…${ca.slice(-6)}`;
+}
+
+function isValidSolAddress(s: string) {
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
+}
+
 
 function Tokenomics() {
   const allocations = [
