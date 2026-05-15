@@ -62,6 +62,8 @@ export default function Page() {
 
       <Concept />
 
+      <Feeding />
+
       <Tokenomics />
 
       <Roadmap />
@@ -100,6 +102,7 @@ function Nav({ onAcquire }: { onAcquire: () => void }) {
         </a>
         <div className="hidden md:flex items-center gap-8 text-sm font-mono uppercase tracking-widest text-parchment-dim">
           <a href="#concept" className="hover:text-gold-bright transition">Concept</a>
+          <a href="#feeding" className="hover:text-gold-bright transition">Feeding</a>
           <a href="#tokenomics" className="hover:text-gold-bright transition">Tokenomics</a>
           <a href="#roadmap" className="hover:text-gold-bright transition">Roadmap</a>
         </div>
@@ -208,6 +211,81 @@ function Concept() {
   );
 }
 
+function Feeding() {
+  const meals = [
+    { ticker: "$BONK", amount: "1,247,891,231", when: "2h ago" },
+    { ticker: "$WIF", amount: "18,432", when: "5h ago" },
+    { ticker: "$POPCAT", amount: "84,123", when: "11h ago" },
+    { ticker: "$MEW", amount: "2,847,123", when: "1d ago" },
+    { ticker: "$FARTCOIN", amount: "412,847", when: "1d ago" },
+    { ticker: "$PNUT", amount: "91,234", when: "2d ago" },
+  ];
+
+  return (
+    <section id="feeding" className="py-24 px-6 border-t border-gold/10">
+      <div className="max-w-5xl mx-auto">
+        <div className="divider mb-12 font-mono text-xs uppercase tracking-[0.4em]">
+          The Feeding
+        </div>
+
+        <blockquote className="font-display italic text-2xl md:text-3xl text-gold-bright leading-snug mb-10 max-w-3xl">
+          “The serpent does not feed alone. It hunts its kin. Every tax becomes another
+          memecoin — bought from the market, dragged into the ring, and burned. The ouroboros
+          consumes the herd.”
+        </blockquote>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+          <Box label="Memecoins consumed" value="47" suffix="and counting" />
+          <Box label="Burned (USD eq.)" value="$12,847" suffix="returned to ash" />
+          <Box label="Last meal" value="$BONK" suffix="2h ago · 1.2B tokens" />
+        </div>
+
+        <div className="border border-gold/15">
+          <div className="px-5 py-3 border-b border-gold/15 flex items-center justify-between bg-ink/40">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+              Recent meals
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-blood-bright">
+              ◉ live (simulated)
+            </span>
+          </div>
+          <div>
+            {meals.map((m, i) => (
+              <div
+                key={m.ticker + i}
+                className="px-5 py-3 grid grid-cols-[1fr_auto_auto] gap-4 items-baseline border-b border-gold/5 last:border-b-0 hover:bg-gold/5 transition"
+              >
+                <span className="font-display text-gold-bright tracking-wider">{m.ticker}</span>
+                <span className="font-mono text-sm text-parchment">{m.amount}</span>
+                <span className="font-mono text-xs text-parchment-dim uppercase tracking-widest">
+                  {m.when}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="px-5 py-3 border-t border-gold/15 bg-ink/40 text-center">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+              All burned to 1nc1nerator11111111111111111111111111111111 · forever
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Box({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+  return (
+    <div className="border border-gold/20 p-5 bg-ink/30">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-parchment-dim mb-2">
+        {label}
+      </div>
+      <div className="font-display text-3xl text-gold-bright mb-1">{value}</div>
+      {suffix && <div className="font-mono text-[10px] text-parchment-dim uppercase tracking-widest">{suffix}</div>}
+    </div>
+  );
+}
+
 function Tokenomics() {
   const allocations = [
     { label: "Liquidity (locked)", pct: 92, color: "var(--color-gold)" },
@@ -225,7 +303,7 @@ function Tokenomics() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <Stat label="Total Supply" value={TOTAL_SUPPLY.toLocaleString()} suffix="$OURO" />
-            <Stat label="Tax (buy / sell)" value="10% / 10%" suffix="returns to liquidity" />
+            <Stat label="Tax (buy / sell)" value="10% / 10%" suffix="buys & burns other memecoins" />
             <Stat label="LP" value="Locked forever" suffix="renounced ownership" />
             <Stat label="Team allocation" value="0%" suffix="no presale, no team wallet" />
           </div>
@@ -257,8 +335,8 @@ function Tokenomics() {
         </div>
 
         <p className="mt-12 text-center text-parchment-dim italic font-display text-xl max-w-2xl mx-auto">
-          “10% of every transaction returns to the snake. The tail feeds the head. The head feeds
-          the tail. The ring is incorruptible.”
+          “10% of every transaction hunts. The serpent buys the meat of other memecoins from the
+          market — and burns it. The ring grows by what it devours.”
         </p>
       </div>
     </section>
@@ -396,23 +474,6 @@ function Footer() {
     <footer className="py-16 px-6 border-t border-gold/10">
       <div className="max-w-5xl mx-auto flex flex-col items-center gap-8">
         <img src="/ouroboros.svg" alt="" className="w-20 h-20 ouroboros-spin opacity-60" />
-        <div className="flex flex-wrap items-center justify-center gap-6 font-mono text-xs uppercase tracking-widest">
-          <a href="#" onClick={(e) => e.preventDefault()} className="text-parchment-dim hover:text-gold-bright transition">
-            X / Twitter
-          </a>
-          <span className="text-gold/30">·</span>
-          <a href="#" onClick={(e) => e.preventDefault()} className="text-parchment-dim hover:text-gold-bright transition">
-            Telegram
-          </a>
-          <span className="text-gold/30">·</span>
-          <a href="#" onClick={(e) => e.preventDefault()} className="text-parchment-dim hover:text-gold-bright transition">
-            Dexscreener
-          </a>
-          <span className="text-gold/30">·</span>
-          <a href="#" onClick={(e) => e.preventDefault()} className="text-parchment-dim hover:text-gold-bright transition">
-            Raydium
-          </a>
-        </div>
         <p className="font-display italic text-center text-parchment-dim max-w-xl text-sm">
           $OURO is a simulation. Nothing here is financial advice. No tokens are bought, sold, or
           transferred. The cycle is the message.
