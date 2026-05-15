@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const CONTRACT = "6WR7Nm2Sa7boAyqERbTT6Cyk6UbVLJNTXrTetZDouro";
+const CONTRACT = "pwb2iH9Xmh9gUyfW6DXG7M45RswYWrqyHDg9k1uouro";
 const TOTAL_SUPPLY = 1_000_000_000;
 const RATE = 8_432_109; // $OURO per 1 SOL (cosmetic only)
 
