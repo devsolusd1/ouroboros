@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const FAKE_CONTRACT = "7HXouroborOSpHil0sopher5toneEterNAL7r3turN5";
+const CONTRACT = "6WR7Nm2Sa7boAyqERbTT6Cyk6UbVLJNTXrTetZDouro";
 const TOTAL_SUPPLY = 1_000_000_000;
 const RATE = 8_432_109; // $OURO per 1 SOL (cosmetic only)
 
@@ -49,7 +49,7 @@ export default function Page() {
   }
 
   function copyContract() {
-    navigator.clipboard?.writeText(FAKE_CONTRACT).catch(() => {});
+    navigator.clipboard?.writeText(CONTRACT).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
@@ -58,7 +58,7 @@ export default function Page() {
     <main className="min-h-screen overflow-x-hidden">
       <Nav onAcquire={openModal} />
 
-      <Hero onAcquire={openModal} contract={FAKE_CONTRACT} copied={copied} onCopy={copyContract} />
+      <Hero onAcquire={openModal} contract={CONTRACT} copied={copied} onCopy={copyContract} />
 
       <Concept />
 
@@ -225,7 +225,7 @@ function Tokenomics() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <Stat label="Total Supply" value={TOTAL_SUPPLY.toLocaleString()} suffix="$OURO" />
-            <Stat label="Tax (buy / sell)" value="1% / 1%" suffix="returns to liquidity" />
+            <Stat label="Tax (buy / sell)" value="10% / 10%" suffix="returns to liquidity" />
             <Stat label="LP" value="Locked forever" suffix="renounced ownership" />
             <Stat label="Team allocation" value="0%" suffix="no presale, no team wallet" />
           </div>
@@ -257,7 +257,7 @@ function Tokenomics() {
         </div>
 
         <p className="mt-12 text-center text-parchment-dim italic font-display text-xl max-w-2xl mx-auto">
-          “1% of every transaction returns to the snake. The tail feeds the head. The head feeds
+          “10% of every transaction returns to the snake. The tail feeds the head. The head feeds
           the tail. The ring is incorruptible.”
         </p>
       </div>
